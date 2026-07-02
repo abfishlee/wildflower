@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  postgis:
+    image: postgis/postgis:15-3.3
+    container_name: semikkot-postgis
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: semikkot_password_2026
+      POSTGRES_DB: semikkot
+    ports:
+      - "55432:5432"
+    volumes:
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - semikkot_pg_data:/var/lib/postgresql/data
+
+volumes:
+  semikkot_pg_data:
