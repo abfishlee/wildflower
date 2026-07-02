@@ -6,8 +6,10 @@ void main() {
     // Build our app and trigger a frame.
     await tester.pumpWidget(const SemikkotApp());
 
-    // Verify that our app title or tab exists.
-    expect(find.text('🌸 세미꽃'), findsOneWidget);
-    expect(find.text('나의 수첩'), findsOneWidget);
+    // Verify that the redesigned top-level navigation exists.
+    expect(find.text('세미꽃'), findsOneWidget);
+    expect(find.text('야생화 수집'), findsWidgets);
+    expect(find.text('나의 정원'), findsOneWidget);
+    expect(find.text('꽃밭'), findsOneWidget);
   });
 }

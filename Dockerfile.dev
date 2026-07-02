@@ -1,0 +1,19 @@
+FROM ghcr.io/cirruslabs/flutter:3.29.3
+
+USER root
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        postgresql-client \
+        python3-pip \
+        python3-venv \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /workspace
+
+COPY data_collector/requirements.txt /tmp/data_collector_requirements.txt
+RUN python3 -m pip install --break-system-packages -r /tmp/data_collector_requirements.txt
+
+RUN flutter config --enable-web
+
+CMD ["bash", "-lc", "cd /workspace/semikkot_app && flutter pub get && cd /workspace && tail -f /dev/null"]

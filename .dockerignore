@@ -1,0 +1,8 @@
+.git
+.dart_tool
+build
+semikkot_app/.dart_tool
+semikkot_app/build
+semikkot_app/android/.gradle
+semikkot_app/ios/Pods
+semikkot_app/macos/Pods

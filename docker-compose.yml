@@ -1,9 +1,29 @@
-version: '3.8'
-
 services:
+  wildflower:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: wildflower
+    working_dir: /workspace
+    command: bash -lc "cd /workspace/semikkot_app && flutter pub get && cd /workspace && tail -f /dev/null"
+    environment:
+      DATABASE_URL: postgresql://postgres:semikkot_password_2026@postgis:5432/semikkot
+      POSTGRES_HOST: postgis
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: semikkot_password_2026
+      POSTGRES_DB: semikkot
+    ports:
+      - "8080:8080"
+    volumes:
+      - .:/workspace
+      - flutter_pub_cache:/root/.pub-cache
+    depends_on:
+      - postgis
+
   postgis:
     image: postgis/postgis:15-3.3
-    container_name: semikkot-postgis
+    container_name: wildflower-postgis
     restart: always
     environment:
       POSTGRES_USER: postgres
@@ -13,7 +33,8 @@ services:
       - "55432:5432"
     volumes:
       - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
-      - semikkot_pg_data:/var/lib/postgresql/data
+      - wildflower_pg_data:/var/lib/postgresql/data
 
 volumes:
-  semikkot_pg_data:
+  wildflower_pg_data:
+  flutter_pub_cache:

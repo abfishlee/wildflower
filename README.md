@@ -77,3 +77,28 @@ flowchart LR
 1. `03_architecture_and_infra_guide.md`를 열어 Supabase 프로젝트 생성 및 PostGIS 테이블 생성 SQL 스크립트를 실행합니다.
 2. `04_data_acquisition_and_ai_pipeline.md`를 참고하여 공공데이터포털의 꽃말 데이터를 Supabase DB로 시딩(Seeding)합니다.
 3. React Native 또는 Flutter 프로젝트를 초기화하여 카카오 간편로그인과 돋보기 카메라 스캔 화면을 개발합니다.
+
+---
+
+## 🐳 로컬 Docker 개발환경
+
+```bash
+docker compose up -d --build
+docker exec -it wildflower bash
+```
+
+Flutter 웹 앱 실행:
+
+```bash
+docker exec -it wildflower bash -lc "cd /workspace/semikkot_app && flutter run -d web-server --web-hostname 0.0.0.0 --web-port 8080"
+```
+
+브라우저에서 `http://localhost:8080`으로 접속합니다.
+
+PostGIS 접속 정보:
+
+- Host: `localhost`
+- Port: `55432`
+- Database: `semikkot`
+- User: `postgres`
+- Password: `semikkot_password_2026`
