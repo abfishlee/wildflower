@@ -1,4 +1,12 @@
+import 'dart:typed_data';
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:latlong2/latlong.dart';
+import 'package:share_plus/share_plus.dart';
 
 void main() {
   runApp(const SemikkotApp());
@@ -23,12 +31,16 @@ class RegionProgress {
     required this.collected,
     required this.total,
     required this.mountain,
+    required this.latitude,
+    required this.longitude,
   });
 
   final String name;
   final int collected;
   final int total;
   final String mountain;
+  final double latitude;
+  final double longitude;
 
   int get remaining => total - collected;
   double get rate => total == 0 ? 0 : collected / total;
@@ -39,6 +51,8 @@ class RegionProgress {
       collected: collected ?? this.collected,
       total: total,
       mountain: mountain,
+      latitude: latitude,
+      longitude: longitude,
     );
   }
 }
@@ -61,6 +75,9 @@ class Wildflower {
     this.waters = 0,
     this.comments = 0,
     this.latestComment,
+    this.confirmedByUser = false,
+    this.identificationConfidence,
+    this.trainingReady = false,
   });
 
   final String name;
@@ -79,6 +96,9 @@ class Wildflower {
   final int waters;
   final int comments;
   final String? latestComment;
+  final bool confirmedByUser;
+  final int? identificationConfidence;
+  final bool trainingReady;
 
   Wildflower copyWith({
     bool? collected,
@@ -89,6 +109,9 @@ class Wildflower {
     int? waters,
     int? comments,
     String? latestComment,
+    bool? confirmedByUser,
+    int? identificationConfidence,
+    bool? trainingReady,
   }) {
     return Wildflower(
       name: name,
@@ -107,6 +130,10 @@ class Wildflower {
       waters: waters ?? this.waters,
       comments: comments ?? this.comments,
       latestComment: latestComment ?? this.latestComment,
+      confirmedByUser: confirmedByUser ?? this.confirmedByUser,
+      identificationConfidence:
+          identificationConfidence ?? this.identificationConfidence,
+      trainingReady: trainingReady ?? this.trainingReady,
     );
   }
 }
@@ -136,6 +163,161 @@ class GardenFilters {
       rarity: rarity ?? this.rarity,
       query: query ?? this.query,
     );
+  }
+}
+
+class IdentificationCandidate {
+  const IdentificationCandidate({
+    required this.flower,
+    required this.confidence,
+    required this.matchReason,
+  });
+
+  final Wildflower flower;
+  final int confidence;
+  final String matchReason;
+}
+
+class WildflowerRepository {
+  const WildflowerRepository();
+
+  List<RegionProgress> loadRegions() {
+    return const [
+      RegionProgress(
+        name: '강원',
+        collected: 12,
+        total: 38,
+        mountain: '설악산',
+        latitude: 37.82,
+        longitude: 128.15,
+      ),
+      RegionProgress(
+        name: '경기',
+        collected: 9,
+        total: 30,
+        mountain: '북한산',
+        latitude: 37.41,
+        longitude: 127.52,
+      ),
+      RegionProgress(
+        name: '충북',
+        collected: 5,
+        total: 22,
+        mountain: '속리산',
+        latitude: 36.80,
+        longitude: 127.70,
+      ),
+      RegionProgress(
+        name: '경북',
+        collected: 8,
+        total: 34,
+        mountain: '주왕산',
+        latitude: 36.58,
+        longitude: 128.75,
+      ),
+      RegionProgress(
+        name: '전북',
+        collected: 4,
+        total: 21,
+        mountain: '덕유산',
+        latitude: 35.72,
+        longitude: 127.15,
+      ),
+      RegionProgress(
+        name: '전남',
+        collected: 7,
+        total: 29,
+        mountain: '무등산',
+        latitude: 34.95,
+        longitude: 126.99,
+      ),
+      RegionProgress(
+        name: '제주',
+        collected: 3,
+        total: 18,
+        mountain: '한라산',
+        latitude: 33.38,
+        longitude: 126.53,
+      ),
+    ];
+  }
+
+  List<Wildflower> loadFlowers() {
+    return const [
+      Wildflower(
+        name: '진달래',
+        scientificName: 'Rhododendron mucronulatum',
+        season: '봄',
+        region: '강원',
+        rarity: 2,
+        language: '사랑의 기쁨, 절제된 아름다움',
+        description: '봄철 산길을 연한 분홍빛으로 물들이는 친근한 우리 꽃입니다.',
+        collected: true,
+        imageColor: Color(0xFFD8A39B),
+        memoryTitle: '설악산에서',
+        memoryNote: '맑은 바람이 부는 능선에서 조용히 만난 첫 봄꽃.',
+        collectedDate: '2026.07.02',
+        isPublic: true,
+        waters: 24,
+        comments: 3,
+      ),
+      Wildflower(
+        name: '금강초롱꽃',
+        scientificName: 'Hanabusaya asiatica',
+        season: '여름',
+        region: '강원',
+        rarity: 5,
+        language: '각별한 사랑, 든든한 마음',
+        description: '한국 고산지대에서 만날 수 있는 귀한 특산 야생화입니다.',
+        collected: false,
+        imageColor: Color(0xFF8EA58A),
+      ),
+      Wildflower(
+        name: '노랑매미꽃',
+        scientificName: 'Hylomecon vernalis',
+        season: '봄',
+        region: '충북',
+        rarity: 3,
+        language: '봄날의 희망, 따뜻한 서정',
+        description: '깊은 산 계곡가에서 맑은 노란빛으로 피어나는 봄꽃입니다.',
+        collected: true,
+        imageColor: Color(0xFFD6B969),
+        memoryTitle: '속리산에서',
+        memoryNote: '새해를 맞이하는 길에 만난 작은 친구.',
+        collectedDate: '2026.06.28',
+        isPublic: false,
+        waters: 8,
+        comments: 1,
+      ),
+      Wildflower(
+        name: '솜다리',
+        scientificName: 'Leontopodium coreanum',
+        season: '여름',
+        region: '강원',
+        rarity: 5,
+        language: '소중한 추억, 고결한 용기',
+        description: '높은 산 바위틈에서 피어나는 흰빛의 귀한 야생화입니다.',
+        collected: false,
+        imageColor: Color(0xFFC7C4B8),
+      ),
+    ];
+  }
+
+  List<IdentificationCandidate> matchPhotoToFlowers({
+    required List<Wildflower> flowers,
+    required String region,
+  }) {
+    return flowers
+        .where((flower) => !flower.collected && flower.region == region)
+        .take(3)
+        .map(
+          (flower) => IdentificationCandidate(
+            flower: flower,
+            confidence: flower.rarity >= 5 ? 87 : 94,
+            matchReason: '${flower.region} · ${flower.season} · 도감 후보',
+          ),
+        )
+        .toList();
   }
 }
 
@@ -216,75 +398,18 @@ class SemikkotHome extends StatefulWidget {
 class _SemikkotHomeState extends State<SemikkotHome> {
   int _currentIndex = 0;
   String _selectedRegion = '강원';
+  final WildflowerRepository _repository = const WildflowerRepository();
+  final ImagePicker _imagePicker = ImagePicker();
 
-  List<RegionProgress> _regions = const [
-    RegionProgress(name: '강원', collected: 12, total: 38, mountain: '설악산'),
-    RegionProgress(name: '경기', collected: 9, total: 30, mountain: '북한산'),
-    RegionProgress(name: '충북', collected: 5, total: 22, mountain: '속리산'),
-    RegionProgress(name: '경북', collected: 8, total: 34, mountain: '주왕산'),
-    RegionProgress(name: '전북', collected: 4, total: 21, mountain: '덕유산'),
-    RegionProgress(name: '전남', collected: 7, total: 29, mountain: '무등산'),
-    RegionProgress(name: '제주', collected: 3, total: 18, mountain: '한라산'),
-  ];
+  late List<RegionProgress> _regions;
+  late List<Wildflower> _flowers;
 
-  List<Wildflower> _flowers = const [
-    Wildflower(
-      name: '진달래',
-      scientificName: 'Rhododendron mucronulatum',
-      season: '봄',
-      region: '강원',
-      rarity: 2,
-      language: '사랑의 기쁨, 절제된 아름다움',
-      description: '봄철 산길을 연한 분홍빛으로 물들이는 친근한 우리 꽃입니다.',
-      collected: true,
-      imageColor: Color(0xFFD8A39B),
-      memoryTitle: '설악산에서',
-      memoryNote: '맑은 바람이 부는 능선에서 조용히 만난 첫 봄꽃.',
-      collectedDate: '2026.07.02',
-      isPublic: true,
-      waters: 24,
-      comments: 3,
-    ),
-    Wildflower(
-      name: '금강초롱꽃',
-      scientificName: 'Hanabusaya asiatica',
-      season: '여름',
-      region: '강원',
-      rarity: 5,
-      language: '각별한 사랑, 든든한 마음',
-      description: '한국 고산지대에서 만날 수 있는 귀한 특산 야생화입니다.',
-      collected: false,
-      imageColor: Color(0xFF8EA58A),
-    ),
-    Wildflower(
-      name: '노랑매미꽃',
-      scientificName: 'Hylomecon vernalis',
-      season: '봄',
-      region: '충북',
-      rarity: 3,
-      language: '봄날의 희망, 따뜻한 서정',
-      description: '깊은 산 계곡가에서 맑은 노란빛으로 피어나는 봄꽃입니다.',
-      collected: true,
-      imageColor: Color(0xFFD6B969),
-      memoryTitle: '속리산에서',
-      memoryNote: '새해를 맞이하는 길에 만난 작은 친구.',
-      collectedDate: '2026.06.28',
-      isPublic: false,
-      waters: 8,
-      comments: 1,
-    ),
-    Wildflower(
-      name: '솜다리',
-      scientificName: 'Leontopodium coreanum',
-      season: '여름',
-      region: '강원',
-      rarity: 5,
-      language: '소중한 추억, 고결한 용기',
-      description: '높은 산 바위틈에서 피어나는 흰빛의 귀한 야생화입니다.',
-      collected: false,
-      imageColor: Color(0xFFC7C4B8),
-    ),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _regions = _repository.loadRegions();
+    _flowers = _repository.loadFlowers();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -313,7 +438,7 @@ class _SemikkotHomeState extends State<SemikkotHome> {
             selectedRegion: _selectedRegion,
             onRegionSelected:
                 (region) => setState(() => _selectedRegion = region),
-            onCollect: _showIdentificationSheet,
+            onCollect: _pickImageForIdentification,
           ),
           _MyGardenTab(
             flowers: _flowers.where((flower) => flower.collected).toList(),
@@ -353,23 +478,50 @@ class _SemikkotHomeState extends State<SemikkotHome> {
     );
   }
 
-  void _showIdentificationSheet(String sourceLabel) {
-    final candidates =
-        _flowers
-            .where(
-              (flower) => !flower.collected && flower.region == _selectedRegion,
-            )
-            .toList();
+  Future<void> _pickImageForIdentification(ImageSource source) async {
+    final sourceLabel = source == ImageSource.camera ? '촬영한' : '올린';
 
-    if (candidates.isEmpty) {
+    try {
+      final image = await _imagePicker.pickImage(
+        source: source,
+        maxWidth: 1600,
+        imageQuality: 88,
+      );
+
+      if (!mounted) return;
+
+      _showIdentificationSheet(
+        sourceLabel: sourceLabel,
+        imageName: image?.name,
+        usedMockFallback: image == null,
+      );
+    } catch (_) {
+      if (!mounted) return;
+      _showIdentificationSheet(
+        sourceLabel: sourceLabel,
+        usedMockFallback: true,
+      );
+    }
+  }
+
+  void _showIdentificationSheet({
+    required String sourceLabel,
+    String? imageName,
+    bool usedMockFallback = false,
+  }) {
+    final matchCandidates = _repository.matchPhotoToFlowers(
+      flowers: _flowers,
+      region: _selectedRegion,
+    );
+
+    if (matchCandidates.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('$_selectedRegion에서 남은 미수집 꽃이 아직 준비되지 않았어요.')),
       );
       return;
     }
 
-    final matchedFlower = candidates.first;
-    final confidence = matchedFlower.rarity >= 5 ? 87 : 94;
+    var selectedCandidate = matchCandidates.first;
 
     showModalBottomSheet<void>(
       context: context,
@@ -379,72 +531,109 @@ class _SemikkotHomeState extends State<SemikkotHome> {
       ),
       builder: (context) {
         return SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  '사진 분석 결과',
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.ink,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  '$sourceLabel 사진에서 가장 가까운 야생화를 찾았어요. 실제 AI 식별 API는 이후 단계에서 연결합니다.',
-                  style: const TextStyle(
-                    fontSize: 15,
-                    height: 1.45,
-                    color: AppColors.muted,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                _AnalysisPreview(
-                  confidence: confidence,
-                  sourceLabel: sourceLabel,
-                ),
-                const SizedBox(height: 12),
-                _FlowerCard(
-                  flower: matchedFlower,
-                  compact: true,
-                  forceCollectedLook: true,
-                ),
-                const SizedBox(height: 16),
-                Row(
+          child: StatefulBuilder(
+            builder: (context, setSheetState) {
+              return SingleChildScrollView(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: () => Navigator.pop(context),
-                        icon: const Icon(Icons.close),
-                        label: const Text('다시 선택'),
+                    const Text(
+                      '사진 분석 결과',
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.ink,
                       ),
                     ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: FilledButton.icon(
-                        onPressed: () {
-                          Navigator.pop(context);
-                          _showCollectSheet(matchedFlower);
-                        },
-                        icon: const Icon(Icons.check_circle_outline),
-                        label: const Text('수집하기'),
+                    const SizedBox(height: 6),
+                    Text(
+                      '$sourceLabel 사진을 앱 도감 DB의 야생화 후보와 대조했어요. 실제 식별 모델/API와 제공처 데이터는 이후 단계에서 연결합니다.',
+                      style: const TextStyle(
+                        fontSize: 15,
+                        height: 1.45,
+                        color: AppColors.muted,
                       ),
+                    ),
+                    if (imageName != null || usedMockFallback) ...[
+                      const SizedBox(height: 10),
+                      _ImageSourceNotice(
+                        imageName: imageName,
+                        usedMockFallback: usedMockFallback,
+                      ),
+                    ],
+                    const SizedBox(height: 16),
+                    _AnalysisPreview(
+                      confidence: selectedCandidate.confidence,
+                      sourceLabel: sourceLabel,
+                    ),
+                    const SizedBox(height: 12),
+                    _FlowerCard(
+                      flower: selectedCandidate.flower,
+                      compact: true,
+                      forceCollectedLook: true,
+                    ),
+                    const SizedBox(height: 14),
+                    const Text(
+                      'DB 매칭 후보',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.ink,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    ...matchCandidates.map(
+                      (candidate) => Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: _IdentificationCandidateTile(
+                          candidate: candidate,
+                          selected:
+                              candidate.flower.name ==
+                              selectedCandidate.flower.name,
+                          onTap:
+                              () => setSheetState(
+                                () => selectedCandidate = candidate,
+                              ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: () => Navigator.pop(context),
+                            icon: const Icon(Icons.close),
+                            label: const Text('다시 선택'),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: FilledButton.icon(
+                            onPressed: () {
+                              Navigator.pop(context);
+                              _showCollectSheet(selectedCandidate);
+                            },
+                            icon: const Icon(Icons.check_circle_outline),
+                            label: const Text('수집하기'),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-              ],
-            ),
+              );
+            },
           ),
         );
       },
     );
   }
 
-  void _showCollectSheet(Wildflower matchedFlower) {
+  void _showCollectSheet(IdentificationCandidate candidate) {
+    final matchedFlower = candidate.flower;
     final titleController = TextEditingController(
       text: '${matchedFlower.region}에서',
     );
@@ -503,6 +692,8 @@ class _SemikkotHomeState extends State<SemikkotHome> {
                 compact: true,
                 forceCollectedLook: true,
               ),
+              const SizedBox(height: 12),
+              _TrainingDataNotice(candidate: candidate),
               const SizedBox(height: 16),
               TextField(
                 controller: titleController,
@@ -526,7 +717,7 @@ class _SemikkotHomeState extends State<SemikkotHome> {
               FilledButton.icon(
                 onPressed: () {
                   _collectFlower(
-                    matchedFlower,
+                    candidate,
                     titleController.text.trim(),
                     noteController.text.trim(),
                   );
@@ -555,7 +746,12 @@ class _SemikkotHomeState extends State<SemikkotHome> {
     });
   }
 
-  void _collectFlower(Wildflower flower, String title, String note) {
+  void _collectFlower(
+    IdentificationCandidate candidate,
+    String title,
+    String note,
+  ) {
+    final flower = candidate.flower;
     final now = DateTime.now();
     final formattedDate =
         '${now.year}.${now.month.toString().padLeft(2, '0')}.${now.day.toString().padLeft(2, '0')}';
@@ -568,6 +764,9 @@ class _SemikkotHomeState extends State<SemikkotHome> {
             title.isEmpty ? '${flower.region}에서 만난 ${flower.name}' : title,
         memoryNote: note.isEmpty ? flower.description : note,
         collectedDate: formattedDate,
+        confirmedByUser: true,
+        identificationConfidence: candidate.confidence,
+        trainingReady: true,
       ),
     );
 
@@ -588,9 +787,11 @@ class _SemikkotHomeState extends State<SemikkotHome> {
               .toList();
     });
 
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text('${flower.name} 카드가 나의 정원에 담겼어요.')));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('${flower.name} 카드가 나의 정원에 담겼고 학습 데이터 후보로 표시됐어요.'),
+      ),
+    );
   }
 
   void _publishFlower(Wildflower flower) {
@@ -689,6 +890,8 @@ class _SemikkotHomeState extends State<SemikkotHome> {
   }
 
   void _showShareSheet(Wildflower flower) {
+    final postcardKey = GlobalKey();
+
     showModalBottomSheet<void>(
       context: context,
       backgroundColor: AppColors.surface,
@@ -722,7 +925,12 @@ class _SemikkotHomeState extends State<SemikkotHome> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                _SharePostcardPreview(flower: flower),
+                RepaintBoundary(
+                  key: postcardKey,
+                  child: _SharePostcardPreview(flower: flower),
+                ),
+                const SizedBox(height: 12),
+                const _ShareFormatNote(),
                 const SizedBox(height: 16),
                 _ShareOptionTile(
                   icon: Icons.chat_bubble_outline,
@@ -737,10 +945,12 @@ class _SemikkotHomeState extends State<SemikkotHome> {
                 _ShareOptionTile(
                   icon: Icons.image_outlined,
                   title: '이미지 엽서로 공유하기',
-                  description: '상대가 앱을 설치하지 않아도 꽃 카드를 사진처럼 볼 수 있습니다.',
-                  onTap: () {
-                    Navigator.pop(context);
-                    _showPendingShareSnack(flower, '이미지 엽서');
+                  description: '워터마크가 포함된 한 장짜리 엽서를 만들어 카톡에 보냅니다.',
+                  onTap: () async {
+                    await _generateImagePostcard(postcardKey, flower);
+                    if (context.mounted) {
+                      Navigator.pop(context);
+                    }
                   },
                 ),
               ],
@@ -758,6 +968,67 @@ class _SemikkotHomeState extends State<SemikkotHome> {
       ),
     );
   }
+
+  Future<void> _generateImagePostcard(
+    GlobalKey postcardKey,
+    Wildflower flower,
+  ) async {
+    try {
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      final boundary =
+          postcardKey.currentContext?.findRenderObject()
+              as RenderRepaintBoundary?;
+
+      if (boundary == null) {
+        throw StateError('postcard render boundary not found');
+      }
+
+      final image = await boundary.toImage(pixelRatio: 3);
+      final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+      final pngBytes = byteData?.buffer.asUint8List();
+
+      if (pngBytes == null || pngBytes.isEmpty) {
+        throw StateError('postcard png bytes are empty');
+      }
+
+      if (!mounted) return;
+      await _shareImagePostcard(flower, pngBytes);
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('${flower.name} 이미지 엽서를 만들지 못했어요. 다시 시도해주세요.')),
+      );
+    }
+  }
+
+  Future<void> _shareImagePostcard(
+    Wildflower flower,
+    Uint8List pngBytes,
+  ) async {
+    final fileName = 'semikkot-postcard-${flower.name}.png';
+    final result = await SharePlus.instance.share(
+      ShareParams(
+        files: [
+          XFile.fromData(pngBytes, mimeType: 'image/png', name: fileName),
+        ],
+        fileNameOverrides: [fileName],
+        subject: '${flower.name} 꽃말 엽서',
+        text: '${flower.name} 꽃말 엽서를 보냅니다.\n세미꽃 - 산길에서 만난 야생화 수집 정원',
+        downloadFallbackEnabled: true,
+      ),
+    );
+
+    if (!mounted) return;
+
+    final message =
+        result.status == ShareResultStatus.dismissed
+            ? '${flower.name} 이미지 엽서 공유를 취소했어요.'
+            : '${flower.name} 이미지 엽서 공유를 열었어요.';
+
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
+  }
 }
 
 class _CollectionTab extends StatelessWidget {
@@ -773,7 +1044,7 @@ class _CollectionTab extends StatelessWidget {
   final List<Wildflower> flowers;
   final String selectedRegion;
   final ValueChanged<String> onRegionSelected;
-  final ValueChanged<String> onCollect;
+  final ValueChanged<ImageSource> onCollect;
 
   @override
   Widget build(BuildContext context) {
@@ -804,7 +1075,7 @@ class _CollectionTab extends StatelessWidget {
           children: [
             Expanded(
               child: FilledButton.icon(
-                onPressed: () => onCollect('촬영한'),
+                onPressed: () => onCollect(ImageSource.camera),
                 icon: const Icon(Icons.photo_camera_outlined),
                 label: const Text('야생화 찍기'),
               ),
@@ -812,7 +1083,7 @@ class _CollectionTab extends StatelessWidget {
             const SizedBox(width: 10),
             Expanded(
               child: OutlinedButton.icon(
-                onPressed: () => onCollect('올린'),
+                onPressed: () => onCollect(ImageSource.gallery),
                 icon: const Icon(Icons.upload_file_outlined),
                 label: const Text('사진 올리기'),
               ),
@@ -857,30 +1128,44 @@ class _MapPlaceholder extends StatelessWidget {
             SizedBox(
               height: 230,
               width: double.infinity,
-              child: CustomPaint(
-                painter: _KoreaMapPlaceholderPainter(),
-                child: Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  alignment: WrapAlignment.center,
-                  children:
-                      regions.map((region) {
-                        final selected = region.name == selectedRegion;
-                        return ChoiceChip(
-                          selected: selected,
-                          label: Text(
-                            '${region.name} ${region.collected}/${region.total}',
-                          ),
-                          selectedColor: AppColors.moss,
-                          backgroundColor: AppColors.surface.withValues(
-                            alpha: 0.82,
-                          ),
-                          side: BorderSide(
-                            color: selected ? AppColors.leaf : AppColors.line,
-                          ),
-                          onSelected: (_) => onRegionSelected(region.name),
-                        );
-                      }).toList(),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: FlutterMap(
+                  options: MapOptions(
+                    initialCenter: const LatLng(36.35, 127.85),
+                    initialZoom: 6.0,
+                    minZoom: 5.2,
+                    maxZoom: 10,
+                    interactionOptions: const InteractionOptions(
+                      flags:
+                          InteractiveFlag.drag |
+                          InteractiveFlag.pinchZoom |
+                          InteractiveFlag.doubleTapZoom,
+                    ),
+                  ),
+                  children: [
+                    TileLayer(
+                      urlTemplate:
+                          'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                      userAgentPackageName: 'kr.co.semikkot.semikkot_app',
+                    ),
+                    MarkerLayer(
+                      markers:
+                          regions.map((region) {
+                            final selected = region.name == selectedRegion;
+                            return Marker(
+                              width: selected ? 92 : 78,
+                              height: selected ? 68 : 58,
+                              point: LatLng(region.latitude, region.longitude),
+                              child: _RegionMapMarker(
+                                region: region,
+                                selected: selected,
+                                onTap: () => onRegionSelected(region.name),
+                              ),
+                            );
+                          }).toList(),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -891,7 +1176,7 @@ class _MapPlaceholder extends StatelessWidget {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    '$selectedRegion 주요 산지와 도 경계 표시 예정',
+                    '$selectedRegion 주요 산지와 수집 현황을 오픈소스 지도에 표시 중입니다.',
                     style: const TextStyle(
                       color: AppColors.muted,
                       fontSize: 14,
@@ -989,83 +1274,64 @@ class _RegionSummaryCard extends StatelessWidget {
   }
 }
 
-class _KoreaMapPlaceholderPainter extends CustomPainter {
+class _RegionMapMarker extends StatelessWidget {
+  const _RegionMapMarker({
+    required this.region,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final RegionProgress region;
+  final bool selected;
+  final VoidCallback onTap;
+
   @override
-  void paint(Canvas canvas, Size size) {
-    final landPaint =
-        Paint()
-          ..color = AppColors.moss.withValues(alpha: 0.58)
-          ..style = PaintingStyle.fill;
-    final linePaint =
-        Paint()
-          ..color = AppColors.sage
-          ..strokeWidth = 1.2
-          ..style = PaintingStyle.stroke;
-    final contourPaint =
-        Paint()
-          ..color = AppColors.soil.withValues(alpha: 0.16)
-          ..strokeWidth = 1
-          ..style = PaintingStyle.stroke;
-
-    final path =
-        Path()
-          ..moveTo(size.width * 0.48, size.height * 0.04)
-          ..cubicTo(
-            size.width * 0.70,
-            size.height * 0.08,
-            size.width * 0.67,
-            size.height * 0.28,
-            size.width * 0.62,
-            size.height * 0.42,
-          )
-          ..cubicTo(
-            size.width * 0.78,
-            size.height * 0.54,
-            size.width * 0.62,
-            size.height * 0.78,
-            size.width * 0.54,
-            size.height * 0.94,
-          )
-          ..cubicTo(
-            size.width * 0.42,
-            size.height * 0.82,
-            size.width * 0.32,
-            size.height * 0.62,
-            size.width * 0.35,
-            size.height * 0.42,
-          )
-          ..cubicTo(
-            size.width * 0.28,
-            size.height * 0.28,
-            size.width * 0.35,
-            size.height * 0.10,
-            size.width * 0.48,
-            size.height * 0.04,
-          )
-          ..close();
-
-    canvas.drawPath(path, landPaint);
-    canvas.drawPath(path, linePaint);
-
-    for (var i = 0; i < 5; i++) {
-      final top = size.height * (0.18 + i * 0.13);
-      canvas.drawArc(
-        Rect.fromLTWH(
-          size.width * (0.36 + i * 0.018),
-          top,
-          size.width * 0.24,
-          size.height * 0.18,
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+        decoration: BoxDecoration(
+          color: selected ? AppColors.leaf : AppColors.surface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: selected ? AppColors.leaf : AppColors.sage,
+            width: selected ? 2 : 1,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: selected ? 0.18 : 0.10),
+              blurRadius: selected ? 10 : 6,
+              offset: const Offset(0, 3),
+            ),
+          ],
         ),
-        0.2,
-        2.7,
-        false,
-        contourPaint,
-      );
-    }
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              region.name,
+              style: TextStyle(
+                fontSize: selected ? 14 : 12,
+                color: selected ? Colors.white : AppColors.ink,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              '${region.collected}/${region.total}',
+              style: TextStyle(
+                fontSize: selected ? 12 : 11,
+                color: selected ? Colors.white : AppColors.leaf,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
 class _MyGardenTab extends StatefulWidget {
@@ -1426,6 +1692,173 @@ class _AnalysisPreview extends StatelessWidget {
   }
 }
 
+class _ImageSourceNotice extends StatelessWidget {
+  const _ImageSourceNotice({
+    required this.imageName,
+    required this.usedMockFallback,
+  });
+
+  final String? imageName;
+  final bool usedMockFallback;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color:
+            usedMockFallback
+                ? AppColors.petal.withValues(alpha: 0.16)
+                : AppColors.moss.withValues(alpha: 0.28),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: usedMockFallback ? AppColors.petal : AppColors.moss,
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            usedMockFallback ? Icons.science_outlined : Icons.image_outlined,
+            size: 20,
+            color: usedMockFallback ? AppColors.soil : AppColors.leaf,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              usedMockFallback
+                  ? '사진 선택이 취소되었거나 현재 환경에서 제한되어 데모 사진으로 분석 흐름을 이어갑니다.'
+                  : '선택한 사진: $imageName',
+              style: const TextStyle(
+                fontSize: 13,
+                height: 1.35,
+                color: AppColors.ink,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TrainingDataNotice extends StatelessWidget {
+  const _TrainingDataNotice({required this.candidate});
+
+  final IdentificationCandidate candidate;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.moss.withValues(alpha: 0.28),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: AppColors.moss),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.verified_outlined, size: 20, color: AppColors.leaf),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              '사용자가 ${candidate.flower.name}로 확정하면 이 기록은 향후 식별 정확도 개선을 위한 학습 데이터 후보가 됩니다. 현재 신뢰도 ${candidate.confidence}%',
+              style: const TextStyle(
+                fontSize: 13,
+                height: 1.35,
+                color: AppColors.ink,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _IdentificationCandidateTile extends StatelessWidget {
+  const _IdentificationCandidateTile({
+    required this.candidate,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final IdentificationCandidate candidate;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color:
+          selected ? AppColors.moss.withValues(alpha: 0.38) : AppColors.paper,
+      borderRadius: BorderRadius.circular(10),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(10),
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: selected ? AppColors.leaf : AppColors.line,
+              width: selected ? 1.5 : 1,
+            ),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      candidate.flower.name,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w900,
+                        color: AppColors.ink,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      candidate.matchReason,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.muted,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 10),
+              Text(
+                '${candidate.confidence}%',
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: AppColors.leaf,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              const SizedBox(width: 6),
+              Icon(
+                selected ? Icons.check_circle : Icons.radio_button_unchecked,
+                color: selected ? AppColors.leaf : AppColors.sage,
+                size: 20,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _GardenCard extends StatelessWidget {
   const _GardenCard({
     required this.flower,
@@ -1495,6 +1928,19 @@ class _GardenCard extends StatelessWidget {
                               fontSize: 13,
                               color: AppColors.soil,
                               fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
+                        if (privateGarden && flower.trainingReady) ...[
+                          const SizedBox(height: 8),
+                          Text(
+                            '사용자 확인 완료 · 학습 후보 ${flower.identificationConfidence ?? '-'}%',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              color: AppColors.leaf,
+                              fontWeight: FontWeight.w800,
                             ),
                           ),
                         ],
@@ -1772,12 +2218,72 @@ class _SharePostcardPreview extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
-          const Text(
-            '세미꽃에서 보낸 야생화 카드',
-            style: TextStyle(
-              fontSize: 12,
-              color: AppColors.muted,
-              fontWeight: FontWeight.w700,
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: AppColors.line),
+            ),
+            child: const Row(
+              children: [
+                Icon(Icons.local_florist, size: 17, color: AppColors.leaf),
+                SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    '세미꽃 - 산길에서 만난 야생화 수집 정원',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: AppColors.muted,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+                Text(
+                  'semikkot.app',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: AppColors.soil,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ShareFormatNote extends StatelessWidget {
+  const _ShareFormatNote();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.moss.withValues(alpha: 0.28),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: AppColors.moss),
+      ),
+      child: const Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.info_outline, size: 20, color: AppColors.leaf),
+          SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              '이미지 엽서는 앱을 설치하지 않은 사람도 카톡방에서 바로 볼 수 있도록 PNG로 생성할 예정입니다.',
+              style: TextStyle(
+                fontSize: 13,
+                height: 1.35,
+                color: AppColors.ink,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
         ],
